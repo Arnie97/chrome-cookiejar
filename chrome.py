@@ -1,8 +1,6 @@
 import http.cookiejar
-import os
-import shutil
 import sqlite3
-import tempfile
+from win32crypt import CryptUnprotectData
 
 
 class ChromeCookieJar(http.cookiejar.CookieJar):
@@ -19,27 +17,27 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             conn.row_factory = lambda cursor, row: {
                 col[0]: row[idx] for idx, col in enumerate(cursor.description)
             }
+
+            # Chrome encrypts cookie values since version 33
+            sql = 'pragma table_info("cookies")'
+            encrypted = any(
+                field['name'] == 'encrypted_value'
+                for field in conn.execute(sql)
+            )
+
             sql = '''
                 select
-                    host_key as domain, name, value,
+                    host_key as domain, name, value, %s
                     path, expires_utc as expires, secure
                 from cookies
                 where host_key like ?
-            '''
+            ''' % ('encrypted_value,' if encrypted else '')
+
             for row in conn.execute(sql, [domain_filter]):
+                if encrypted:
+                    cipher_blob = row.pop('encrypted_value')
+                    if not row['value']:
+                        row['value'] = \
+                            CryptUnprotectData(cipher_blob)[1].decode()
                 cookie_item = http.cookiejar.Cookie(**row, **dummy, version=0)
                 self.set_cookie(cookie_item)
-
-
-try:
-    temp_path = tempfile.mkstemp()[1]
-    cookie_path = os.path.join(
-        os.environ['LOCALAPPDATA'],
-        'Google/Chrome/User Data/Default/Cookies'
-    )
-    shutil.copyfile(cookie_path, temp_path)
-    cookies = ChromeCookieJar(temp_path)
-    os.remove(temp_path)
-
-except FileNotFoundError:
-    print('Chrome installation not found.')
