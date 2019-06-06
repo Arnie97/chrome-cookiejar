@@ -1,3 +1,4 @@
+import datetime
 import http.cookiejar
 import sqlite3
 from win32crypt import CryptUnprotectData
@@ -28,12 +29,13 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             sql = '''
                 select
                     host_key as domain, name, value, %s
-                    path, expires_utc as expires, secure
+                    path, expires_utc, is_secure as secure
                 from cookies
                 where host_key like ?
             ''' % ('encrypted_value,' if encrypted else '')
 
             for row in conn.execute(sql, [domain_filter]):
+                row['expires'] = webkit_timestamp_to_unix(row.pop('expires_utc'))
                 if encrypted:
                     cipher_blob = row.pop('encrypted_value')
                     if not row['value']:
@@ -41,3 +43,11 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
                             CryptUnprotectData(cipher_blob)[1].decode()
                 cookie_item = http.cookiejar.Cookie(**row, **dummy, version=0)
                 self.set_cookie(cookie_item)
+
+
+def webkit_timestamp_to_unix(webkit_timestamp: int) -> float:
+    if not webkit_timestamp:
+        return
+    t = datetime.datetime(1601, 1, 1)
+    t += datetime.timedelta(microseconds=webkit_timestamp)
+    return t.timestamp()
