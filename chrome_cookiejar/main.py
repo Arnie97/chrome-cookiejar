@@ -2,7 +2,7 @@ import datetime
 import http.cookiejar
 import sqlite3
 from typing import Iterable
-from win32crypt import CryptUnprotectData
+from .win32crypt import CryptUnprotectData
 
 
 class ChromeCookieJar(http.cookiejar.CookieJar):

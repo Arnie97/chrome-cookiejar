@@ -1,4 +1,4 @@
-# Chrome Cookies
+# Chrome Cookiejar
 This module helps to utilize your Chrome cookies in Python scripts.
 It's especially useful when scraping sites that requires login,
 as you can test your ideas easily without having to recognize the captchas and emulate the whole login process first.
@@ -19,13 +19,12 @@ To avoid problems, it's recommended to exit your Chrome or use a copy of the fil
 Use the following snippet of code to create an instance of `http.cookiejar.CookieJar` including all cookies from your chrome:
 
 ```python
-from chrome import ChromeCookieJar
+from chrome_cookiejar import ChromeCookieJar
 cookiejar = ChromeCookieJar(path_of_your_cookies_file)
 ```
 
 As the `Cookies` file is a SQLite database, you can optionally filter the domain of cookies with SQL wildcards:
 
 ```python
-from chrome import ChromeCookieJar
 cookiejar = ChromeCookieJar(path_of_your_cookies_file, '%github.com')
 ```

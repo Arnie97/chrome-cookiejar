@@ -4,7 +4,7 @@ import os
 import re
 import requests
 import shutil
-from chrome import ChromeCookieJar
+from chrome_cookiejar import ChromeCookieJar
 
 
 def get_cookiejar(domain_filter='%'):
