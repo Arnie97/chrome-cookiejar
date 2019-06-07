@@ -3,23 +3,46 @@ import http.cookiejar
 import sqlite3
 from typing import Iterable
 from .decrypt import decrypt
+from .path import find_cookies_path
 
 
 class ChromeCookieJar(http.cookiejar.CookieJar):
-    'Create CookieJar instance from the Chrome cookies database.'
 
-    def __init__(self, cookie_file_path, domain_filter='%', policy=None):
+    def __init__(
+        self,
+        cookies_path=None,
+        host_filter='%',
+        policy=None
+    ):
+        '''Create CookieJar instance from the Chrome cookies database.
+
+        Parameters
+        ----------
+        cookies_path: str, optional
+            Path of the Chrom(ium) Cookies database file.
+            If omitted, try to find the file in its default locations.
+
+        host_filter: str, optional
+            Filter cookies in the database by their host names.
+            Only matched items would be added to the cookie jar.
+            Support % and _ wildcards, as in the SQL "LIKE" clause.
+            If omitted, include all cookies in the database.
+        '''
+        if cookies_path is None:
+            cookies_path = find_cookies_path()
+            assert cookies_path, 'Cookies not found in the default locations'
+
         super().__init__(policy)
         dummy = {key: None for key in (
             'port', 'port_specified', 'domain_specified', 'domain_initial_dot',
             'path_specified', 'discard', 'comment', 'comment_url', 'rest'
         )}
 
-        with sqlite3.connect(cookie_file_path) as conn:
+        with sqlite3.connect(cookies_path) as conn:
             conn.row_factory = dict_factory
             sql_fields = ', '.join(self.get_cookie_fields(conn))
             sql = 'select %s from cookies where host_key like ?' % sql_fields
-            for row in conn.execute(sql, [domain_filter]):
+            for row in conn.execute(sql, [host_filter]):
                 row['expires'] = \
                     webkit_timestamp_to_unix(row.pop('expires_utc'))
                 if row.get('encrypted_value') and not row.get('value'):

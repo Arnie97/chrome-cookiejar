@@ -1,7 +1,7 @@
 # Chrome Cookiejar
 This module helps to utilize your Chrome cookies in Python scripts.
 It's especially useful when scraping sites that requires login,
-as you can test your ideas easily without having to recognize the captchas and emulate the whole login process first.
+as you can test your ideas easily without solving the CAPTCHAs and emulating the whole login process.
 
 ## Supported platforms
 This package is only tested on Python 3.
@@ -10,21 +10,26 @@ Please also note that values of cookies are encrypted with platform specific alg
 The decrypt helper for Windows is already included; however, only older versions of Chrome is currently supported on macOS or Linux.
 
 ## Get started
-First, you need to locate your `Cookies` file.
-By default, the path is `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Cookies` for Windows, `~/.config/google-chrome/Default` for Linux and `~/Library/Application Support/Google/Chrome/Default/Cookies` for macOS.
-If in doubt, you can always navigate to *chrome://version* and follow the *Profile Path* shown here.
-
-To avoid problems, it's recommended to exit your Chrome or use a copy of the file.
-
-Use the following snippet of code to create an instance of `http.cookiejar.CookieJar` including all cookies from your chrome:
+Use the following code snippet to create an instance of `http.cookiejar.CookieJar` that includes all cookies from your Chrome browser:
 
 ```python
-from chrome_cookiejar import ChromeCookieJar
-cookiejar = ChromeCookieJar(path_of_your_cookies_file)
+>>> from chrome_cookiejar import ChromeCookieJar
+>>> cookiejar = ChromeCookieJar('/path/of/your/Cookies')  # doctest: +SKIP
+
 ```
 
-As the `Cookies` file is a SQLite database, you can optionally filter the domain of cookies with SQL wildcards:
+The file path is optional; if omitted, the library will try to read cookies from the default user profile path of Chrom(ium).
+If you're not sure, check `chrome://version` and follow the *Profile Path* shown here.
+
+As the `Cookies` file is a SQLite database, you could filter the host domain with SQL wildcards:
 
 ```python
-cookiejar = ChromeCookieJar(path_of_your_cookies_file, '%github.com')
+>>> import requests, re
+>>> jar = ChromeCookieJar(host_filter='%gith_b.com')
+>>> login_user = re.compile(r'<meta name="user-login" content="(.+?)">')
+>>> login_user.findall(requests.get('https://github.com', cookies=None).text)
+[]
+>>> login_user.findall(requests.get('https://github.com', cookies=jar).text)
+['Arnie97']
+
 ```
