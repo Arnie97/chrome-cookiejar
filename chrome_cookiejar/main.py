@@ -2,7 +2,7 @@ import datetime
 import http.cookiejar
 import sqlite3
 from typing import Iterable
-from .win32crypt import CryptUnprotectData
+from .decrypt import decrypt
 
 
 class ChromeCookieJar(http.cookiejar.CookieJar):
@@ -23,8 +23,7 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
                 row['expires'] = \
                     webkit_timestamp_to_unix(row.pop('expires_utc'))
                 if row.get('encrypted_value') and not row.get('value'):
-                    cipher_blob = row.pop('encrypted_value')
-                    row['value'] = CryptUnprotectData(cipher_blob)[1].decode()
+                    row['value'] = decrypt(row.pop('encrypted_value')).decode()
                 cookie_item = http.cookiejar.Cookie(**row, **dummy, version=0)
                 self.set_cookie(cookie_item)
 
