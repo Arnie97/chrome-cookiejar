@@ -17,5 +17,5 @@ else:
         elif cipher_blob.startswith(b'v11'):
             password = get_chrome_safe_storage()
         else:
-            raise ValueError('Unknown cipher type: %s' % cipher_blob)
+            raise ValueError('Unknown cipher type: %r' % cipher_blob)
         return aes_cbc_decrypt(cipher_blob, password)

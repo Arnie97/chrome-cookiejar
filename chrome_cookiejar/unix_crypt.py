@@ -10,7 +10,7 @@ def aes_cbc_decrypt(
     iv=16 * b' ',
     iterations=1,
 ) -> bytes:
-    key = PBKDF2(password, salt, length, iterations)
+    key = PBKDF2(password, salt, length, iterations)  # type: ignore
     cipher = AES.new(key, AES.MODE_CBC, IV=iv)
 
     # strip off the 'v10' prefix before AES decrypt

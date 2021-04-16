@@ -9,6 +9,10 @@ def find_cookies_path() -> str:
         file_path = os.path.join(os.path.expandvars(path), 'Cookies')
         if os.path.isfile(file_path):
             return file_path
+    raise FileNotFoundError(
+        'Cookies not found in the default locations. '
+        'Please specify the path to the Cookies database.'
+    )
 
 
 DEFAULT_LOCATIONS = {

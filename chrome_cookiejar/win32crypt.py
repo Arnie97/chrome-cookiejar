@@ -2,7 +2,8 @@
 # This file uses code originally created by Crusher Joe:
 # http://article.gmane.org/gmane.comp.python.ctypes/420
 
-from ctypes import *
+from ctypes import POINTER, Structure, c_char, c_wchar_p
+from ctypes import byref, create_string_buffer, memmove, windll
 from ctypes.wintypes import DWORD
 
 CRYPTPROTECT_UI_FORBIDDEN = 0x01

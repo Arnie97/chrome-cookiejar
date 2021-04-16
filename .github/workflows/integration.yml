@@ -34,12 +34,13 @@ jobs:
       run: |
         python -c "import sys; print(sys.version)"
 
-    - name: Run tests
+    - name: Build the package
       run: |
         pip install .
+        python -c "import chrome_cookiejar"
 
   mypy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -51,9 +52,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install mypy
+        pip install pycryptodome mypy pytest-flake8 pytest-cov codecov
+
+    - name: Build the package
+      run: |
         pip install .
 
     - name: Run static type checking
       run: |
-        mypy chrome_cookiejar
+        mypy --pretty --warn-unreachable --strict-equality .
+        pytest --verbose --flake8 --cov chrome_cookiejar --cov-append
+        codecov

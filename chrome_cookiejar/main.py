@@ -1,7 +1,7 @@
 import datetime
 import http.cookiejar
 import sqlite3
-from typing import Iterable
+from typing import Dict, Iterable, Optional, Any
 from .decrypt import decrypt
 from .path import find_cookies_path
 
@@ -30,7 +30,6 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
         '''
         if cookies_path is None:
             cookies_path = find_cookies_path()
-            assert cookies_path, 'Cookies not found in the default locations'
 
         super().__init__(policy)
         dummy = {key: None for key in (
@@ -43,12 +42,12 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             sql_fields = ', '.join(self.get_cookie_fields(conn))
             sql = 'select %s from cookies where host_key like ?' % sql_fields
             for row in conn.execute(sql, [host_filter]):
-                row['expires'] = \
-                    webkit_timestamp_to_unix(row.pop('expires_utc'))
+                row['expires'] = nt_timestamp_to_unix(row.pop('expires_utc'))
                 if row.get('encrypted_value') and not row.get('value'):
                     row['value'] = decrypt(row.pop('encrypted_value')).decode()
-                cookie_item = http.cookiejar.Cookie(**row, **dummy, version=0)
-                self.set_cookie(cookie_item)
+                self.set_cookie(http.cookiejar.Cookie(
+                    **row, **dummy, version=0,  # typing: ignore
+                ))
 
     @staticmethod
     def get_cookie_fields(conn: sqlite3.Connection) -> Iterable[str]:
@@ -69,7 +68,7 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             yield 'secure'
 
 
-def dict_factory(cursor, row):
+def dict_factory(cursor: sqlite3.Cursor, row: tuple) -> Dict[str, Any]:
     'This row factory returns each row as a dict, with field names as the key.'
     return {
         col[0]: row[idx]
@@ -83,10 +82,14 @@ def get_field_names(conn: sqlite3.Connection, table: str) -> Iterable[str]:
         yield field['name']
 
 
-def webkit_timestamp_to_unix(webkit_timestamp: int) -> float:
-    'Convert WebKit timestamp to Unix epoch.'
-    if not webkit_timestamp:
-        return
+def nt_timestamp_to_unix(nt_timestamp: int) -> Optional[float]:
+    '''Convert Windows NT FILETIME timestamp to Unix epoch.
+
+    >>> nt_timestamp_to_unix(10275638401000000)
+    91111881601.0
+    '''
+    if not nt_timestamp:
+        return None
     t = datetime.datetime(1601, 1, 1)
-    t += datetime.timedelta(microseconds=webkit_timestamp)
+    t += datetime.timedelta(microseconds=nt_timestamp)
     return t.timestamp()
