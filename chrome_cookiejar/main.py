@@ -40,7 +40,7 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
         with sqlite3.connect(cookies_path) as conn:
             conn.row_factory = dict_factory
             sql_fields = ', '.join(self.get_cookie_fields(conn))
-            sql = 'select %s from cookies where host_key like ?' % sql_fields
+            sql = 'select %s from cookies where hex(encrypted_value)!="" and host_key like ?' % sql_fields  
             for row in conn.execute(sql, [host_filter]):
                 row['expires'] = nt_timestamp_to_unix(row.pop('expires_utc'))
                 if row.get('encrypted_value') and not row.get('value'):
