@@ -43,8 +43,10 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             sql = 'select %s from cookies where host_key like ?' % sql_fields
             for row in conn.execute(sql, [host_filter]):
                 row['expires'] = nt_timestamp_to_unix(row.pop('expires_utc'))
-                if row.get('encrypted_value') and not row.get('value'):
-                    row['value'] = decrypt(row.pop('encrypted_value')).decode()
+                if 'encrypted_value' in row:
+                    encrypted_value = row.pop('encrypted_value')
+                    if not row.get('value'):
+                        row['value'] = decrypt(encrypted_value).decode()
                 self.set_cookie(http.cookiejar.Cookie(
                     **row, **dummy, version=0,  # typing: ignore
                 ))
