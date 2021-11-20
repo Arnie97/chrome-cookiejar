@@ -13,7 +13,8 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
         self,
         cookies_path=None,
         host_filter='%',
-        policy=None
+        policy=None,
+        names=None
     ):
         '''Create CookieJar instance from the Chrome cookies database.
 
@@ -28,9 +29,15 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             Only matched items would be added to the cookie jar.
             Support % and _ wildcards, as in the SQL "LIKE" clause.
             If omitted, include all cookies in the database.
+
+        names: list of str, optional
+            Include only the cookies whose names are in this list.
         '''
         if cookies_path is None:
             cookies_path = find_cookies_path()
+
+        if names and not isinstance(names, list):
+            names = [names]
 
         super().__init__(policy)
         dummy = {key: None for key in (
@@ -43,19 +50,20 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
             sql_fields = ', '.join(self.get_cookie_fields(conn))
             sql = 'select %s from cookies where host_key like ?' % sql_fields
             for row in conn.execute(sql, [host_filter]):
-                row['expires'] = nt_timestamp_to_unix(row.pop('expires_utc'))
-                if 'encrypted_value' in row:
-                    encrypted_value = row.pop('encrypted_value')
-                    if not row.get('value'):
-                        decrypted_value = decrypt(encrypted_value)
-                        encoding = chardet.detect(decrypted_value)['encoding']
-                        if encoding:
-                            row['value'] = decrypted_value.decode(encoding)
-                        else:
-                            row['value'] = decrypted_value.decode()
-                self.set_cookie(http.cookiejar.Cookie(
-                    **row, **dummy, version=0,  # typing: ignore
-                ))
+                if names is None or row['name'] in names:
+                    row['expires'] = nt_timestamp_to_unix(row.pop('expires_utc'))
+                    if 'encrypted_value' in row:
+                        encrypted_value = row.pop('encrypted_value')
+                        if not row.get('value'):
+                            decrypted_value = decrypt(encrypted_value)
+                            encoding = chardet.detect(decrypted_value)['encoding']
+                            if encoding:
+                                row['value'] = decrypted_value.decode(encoding)
+                            else:
+                                row['value'] = decrypted_value.decode()
+                    self.set_cookie(http.cookiejar.Cookie(
+                        **row, **dummy, version=0,  # typing: ignore
+                    ))
 
     @staticmethod
     def get_cookie_fields(conn: sqlite3.Connection) -> Iterable[str]:
