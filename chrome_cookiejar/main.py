@@ -1,3 +1,4 @@
+import chardet
 import datetime
 import http.cookiejar
 import sqlite3
@@ -46,7 +47,12 @@ class ChromeCookieJar(http.cookiejar.CookieJar):
                 if 'encrypted_value' in row:
                     encrypted_value = row.pop('encrypted_value')
                     if not row.get('value'):
-                        row['value'] = decrypt(encrypted_value).decode()
+                        decrypted_value = decrypt(encrypted_value)
+                        encoding = chardet.detect(decrypted_value)['encoding']
+                        if encoding:
+                            row['value'] = decrypted_value.decode(encoding)
+                        else:
+                            row['value'] = decrypted_value.decode()
                 self.set_cookie(http.cookiejar.Cookie(
                     **row, **dummy, version=0,  # typing: ignore
                 ))
