@@ -1,6 +1,7 @@
 [build-system]
 requires = [
     "chardet",
+    "keyring",
     "setuptools>=42",
     "wheel"
 ]

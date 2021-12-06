@@ -1,3 +1,4 @@
+import keyring
 from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 
@@ -22,4 +23,5 @@ def aes_cbc_decrypt(
 
 
 def get_chrome_safe_storage() -> bytes:
-    raise NotImplementedError
+    my_pass = keyring.get_password('Chrome Safe Storage', 'Chrome')
+    return my_pass.encode('utf8')

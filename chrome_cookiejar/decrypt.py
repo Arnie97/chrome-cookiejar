@@ -13,9 +13,15 @@ else:
         if not cipher_blob:
             return cipher_blob
         elif cipher_blob.startswith(b'v10'):
-            password = b'peanuts'
+            if sys.platform == 'darwin':
+                password = get_chrome_safe_storage()
+            else:
+                password = b'peanuts'.encode('utf-8')
         elif cipher_blob.startswith(b'v11'):
             password = get_chrome_safe_storage()
         else:
             raise ValueError('Unknown cipher type: %r' % cipher_blob)
-        return aes_cbc_decrypt(cipher_blob, password)
+        if sys.platform == 'darwin':
+            return aes_cbc_decrypt(cipher_blob, password, iterations=1003)
+        else:
+            return aes_cbc_decrypt(cipher_blob, password)
